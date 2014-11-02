@@ -1,8 +1,9 @@
 /*
-  DigitalReadSerial
- Reads a digital input on pin 2, prints the result to the serial monitor 
- 
- This example code is in the public domain.
+Reads digital inputs 2-9, debounces them using a shift register.  Outputs
+char codes '0' - '7' on the serial line when the buttons are pushed.
+
+Expects SPST pushbuttons connected between digital pins 2-9 and ground.
+Uses the internal pull ups.
  */
 
 unsigned int debounce[8] = {1,1,1,1, 1,1,1,1};
@@ -18,7 +19,7 @@ void setup() {
   // initialize serial communication at 9600 bits per second:
   Serial.begin(9600);
   
-  // make the pushbutton's pin an input:
+  // Enable internal pull-ups on the inputs.
   pinMode(2, INPUT_PULLUP);
   pinMode(3, INPUT_PULLUP);
   pinMode(4, INPUT_PULLUP);
@@ -35,13 +36,17 @@ void loop() {
   int i;
   int val;
   
+  // Loop over the pins, read them each in turn.
   for (i = 0; i < 8; i++) {
-    val = digitalRead(i+2);
+    val = digitalRead(i+2); // +2 because pins 0-1 are used for serial.
+    
+    // Shift register debouncer, feed 1-bit value in from the right.  Only
+    // trigger a key press once the debouncer is full of 0s.
     debounce[i] = (debounce[i] << 1) | val;
-    if (debounce[i] == 0) {  // normally high.
-      if (repeat[i] == 0){
+    if (debounce[i] == 0) {  // Button down for whole debounce period.
+      if (repeat[i] == 0){  
         Serial.write(output_vals[i]);
-        repeat[i] = 40;
+        repeat[i] = 40;  // Auto-repeat every 200 msec or so.
       }
       else
       {
